@@ -1,6 +1,6 @@
-# OpenAI-Compatible Proxy Server for Amazon Bedrock Agent
+# OpenAI-Compatible Proxy Server for Amazon Bedrock Agents
 
-This component provides an OpenAI-compatible chat completions API that internally uses Amazon Bedrock Agent.
+This component provides an OpenAI-compatible chat completions API that internally uses Amazon Bedrock Agents.
 
 ## Features
 
