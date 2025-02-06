@@ -79,7 +79,7 @@ curl -s https://ngrok-agent.s3.amazonaws.com/ngrok.asc | sudo tee /etc/apt/trust
 # On macOS with Homebrew
 brew install ngrok
 
-# Or download from https://ngrok.com/download
+# Or download from https://ngrok.com/downloads
 ```
 
 2. Sign up at https://ngrok.com and get your authtoken
