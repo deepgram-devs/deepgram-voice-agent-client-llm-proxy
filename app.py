@@ -247,36 +247,9 @@ def stream_chat_completion(data):
         # Track if we've sent any content
         has_sent_content = False
         
+        # Process only chunk events
         for event in completion_stream:
-            if 'trace' in event:
-                trace_data = event['trace'].get('trace', {}).get('orchestrationTrace', {})
-                if 'observation' in trace_data:
-                    observation = trace_data['observation']
-                    if isinstance(observation, dict) and 'finalResponse' in observation:
-                        final_text = observation['finalResponse'].get('text', '')
-                        if final_text:
-                            # Split into words and stream each word
-                            words = final_text.split()
-                            for i, word in enumerate(words):
-                                chunk_response = {
-                                    "id": completion_id,
-                                    "object": "chat.completion.chunk",
-                                    "created": created,
-                                    "model": model,
-                                    "system_fingerprint": None,
-                                    "choices": [{
-                                        "index": 0,
-                                        "delta": {
-                                            "content": f"{word}{' ' if i < len(words)-1 else ''}"
-                                        },
-                                        "logprobs": None,
-                                        "finish_reason": None
-                                    }]
-                                }
-                                yield format_sse_event(json.dumps(chunk_response))
-                                has_sent_content = True
-            
-            elif 'chunk' in event:
+            if 'chunk' in event:
                 try:
                     chunk_content = event['chunk']['bytes'].decode('utf-8')
                     if chunk_content.strip():
@@ -285,7 +258,7 @@ def stream_chat_completion(data):
                             if isinstance(chunk_data, dict) and 'content' in chunk_data:
                                 content = chunk_data['content']
                                 if content.strip():
-                                    chunk_response = {
+                                    yield format_sse_event(json.dumps({
                                         "id": completion_id,
                                         "object": "chat.completion.chunk",
                                         "created": created,
@@ -294,17 +267,16 @@ def stream_chat_completion(data):
                                         "choices": [{
                                             "index": 0,
                                             "delta": {
-                                                "content": content
+                                                "content": content.strip()
                                             },
                                             "logprobs": None,
                                             "finish_reason": None
                                         }]
-                                    }
-                                    yield format_sse_event(json.dumps(chunk_response))
+                                    }))
                                     has_sent_content = True
                         except json.JSONDecodeError:
                             if chunk_content.strip():
-                                chunk_response = {
+                                yield format_sse_event(json.dumps({
                                     "id": completion_id,
                                     "object": "chat.completion.chunk",
                                     "created": created,
@@ -313,13 +285,12 @@ def stream_chat_completion(data):
                                     "choices": [{
                                         "index": 0,
                                         "delta": {
-                                            "content": chunk_content
+                                            "content": chunk_content.strip()
                                         },
                                         "logprobs": None,
                                         "finish_reason": None
                                     }]
-                                }
-                                yield format_sse_event(json.dumps(chunk_response))
+                                }))
                                 has_sent_content = True
                 except Exception as e:
                     logger.error(f"Error processing chunk: {e}")
