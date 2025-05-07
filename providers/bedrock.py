@@ -174,6 +174,9 @@ class BedrockProvider(CompletionProvider):
             # Log the incoming request
             self.log_request(messages)
             
+            # Collect the full response for logging
+            full_response = []
+            
             # Initial response with role
             initial_response = {
                 "id": completion_id,
@@ -249,6 +252,9 @@ class BedrockProvider(CompletionProvider):
                                             )
                                         )
                                         has_sent_content = True
+                                        
+                                        # Collect the content for full response logging
+                                        full_response.append(content.strip())
                             except json.JSONDecodeError:
                                 if chunk_content.strip():
                                     yield self.format_sse_event(
@@ -273,11 +279,15 @@ class BedrockProvider(CompletionProvider):
                                         )
                                     )
                                     has_sent_content = True
+                                    
+                                    # Collect the content for full response logging
+                                    full_response.append(chunk_content.strip())
                     except Exception as e:
                         logger.error(f"Error processing chunk: {e}")
 
             # If we haven't sent any content, send a placeholder
             if not has_sent_content:
+                placeholder_text = "I apologize, but I received no response from the agent. How else can I assist you?"
                 chunk_response = {
                     "id": completion_id,
                     "object": "chat.completion.chunk",
@@ -288,7 +298,7 @@ class BedrockProvider(CompletionProvider):
                         {
                             "index": 0,
                             "delta": {
-                                "content": "I apologize, but I received no response from the agent. How else can I assist you?"
+                                "content": placeholder_text
                             },
                             "logprobs": None,
                             "finish_reason": None,
@@ -296,6 +306,9 @@ class BedrockProvider(CompletionProvider):
                     ],
                 }
                 yield self.format_sse_event(json.dumps(chunk_response))
+                
+                # Set the full response to the placeholder
+                full_response = [placeholder_text]
 
             # Final chunk with finish_reason
             final_response = {
@@ -309,11 +322,19 @@ class BedrockProvider(CompletionProvider):
                 ],
             }
             yield self.format_sse_event(json.dumps(final_response))
+            
+            # Log the complete response
+            complete_response = ' '.join(full_response)
+            self.log_response(complete_response)
+            
             yield self.format_sse_event("[DONE]")
 
         except Exception as e:
             logger.error(f"Error in get_streaming_response: {str(e)}", exc_info=True)
+            error_message = str(e)
             error_response = {
-                "error": {"message": str(e), "type": "server_error", "code": 500}
+                "error": {"message": error_message, "type": "server_error", "code": 500}
             }
+            # Log the error as the response
+            self.log_response(f"Error: {error_message}")
             yield self.format_sse_event(json.dumps(error_response))

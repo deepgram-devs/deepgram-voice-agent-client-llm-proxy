@@ -130,6 +130,9 @@ class OpenAIProvider(CompletionProvider):
             # Track if we've sent any content
             has_sent_content = False
             
+            # Collect the full response for logging
+            full_response = []
+            
             # Process the stream
             for chunk in stream:
                 if chunk.choices and len(chunk.choices) > 0:
@@ -137,6 +140,9 @@ class OpenAIProvider(CompletionProvider):
                     if delta.content:
                         # Log the streaming response
                         logger.debug(f"Streaming chunk from OpenAI: {delta.content}")
+                        
+                        # Collect the content for full response logging
+                        full_response.append(delta.content)
                         
                         yield self.format_sse_event(
                             json.dumps({
@@ -177,6 +183,7 @@ class OpenAIProvider(CompletionProvider):
             
             # If we haven't sent any content, send a placeholder
             if not has_sent_content:
+                placeholder_text = "I apologize, but I received no response. How else can I assist you?"
                 chunk_response = {
                     "id": completion_id,
                     "object": "chat.completion.chunk",
@@ -187,7 +194,7 @@ class OpenAIProvider(CompletionProvider):
                         {
                             "index": 0,
                             "delta": {
-                                "content": "I apologize, but I received no response. How else can I assist you?"
+                                "content": placeholder_text
                             },
                             "logprobs": None,
                             "finish_reason": None,
@@ -195,6 +202,9 @@ class OpenAIProvider(CompletionProvider):
                     ],
                 }
                 yield self.format_sse_event(json.dumps(chunk_response))
+                
+                # Set the full response to the placeholder
+                full_response = [placeholder_text]
                 
                 # Final chunk with finish_reason
                 final_response = {
@@ -208,12 +218,19 @@ class OpenAIProvider(CompletionProvider):
                     ],
                 }
                 yield self.format_sse_event(json.dumps(final_response))
+        
+            # Log the complete response
+            complete_response = ''.join(full_response)
+            self.log_response(complete_response)
             
             yield self.format_sse_event("[DONE]")
             
         except Exception as e:
             logger.error(f"Error in get_streaming_response: {str(e)}", exc_info=True)
+            error_message = str(e)
             error_response = {
-                "error": {"message": str(e), "type": "server_error", "code": 500}
+                "error": {"message": error_message, "type": "server_error", "code": 500}
             }
+            # Log the error as the response
+            self.log_response(f"Error: {error_message}")
             yield self.format_sse_event(json.dumps(error_response))
