@@ -1,12 +1,16 @@
-# OpenAI-Compatible Proxy Server for Amazon Bedrock Agents
+# Multi-Provider Chat Completions Proxy
 
-This component provides an OpenAI-compatible chat completions API that internally uses Amazon Bedrock Agents.
+This component provides an OpenAI-compatible chat completions API that can use multiple LLM providers, including Amazon Bedrock Agents and OpenAI. It's designed to be modular and extensible, allowing you to easily switch between providers or add new ones.
+
+*Note: In order for non-local models to work, you will need to have this proxy server accessible over the internet. You can use tools like ngrok to expose your local server to the internet.*
 
 ## Features
 
 - OpenAI-compatible `/v1/chat/completions` endpoint
+- Support for multiple LLM providers (Bedrock, OpenAI, and extensible for more)
+- Easy provider switching through environment variables or request parameters
 - Support for both streaming and non-streaming responses
-- Session management for maintaining conversation context
+- Message logging for requests and responses
 - Exact matching of OpenAI's response format
 - Comprehensive error handling and logging
 
@@ -15,9 +19,15 @@ This component provides an OpenAI-compatible chat completions API that internall
 ### Main Application (`app.py`)
 - Flask server implementation
 - Request/response handling
-- Bedrock Agent integration
+- Provider selection and management
 - Format conversion
 - Error handling
+
+### Provider System (`providers/`)
+- Base provider interface (`base.py`)
+- Bedrock provider implementation (`bedrock.py`)
+- OpenAI provider implementation (`openai.py`)
+- Provider factory for easy selection (`__init__.py`)
 
 ### Streaming Support
 The server implements Server-Sent Events (SSE) streaming that:
@@ -47,19 +57,25 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Required variables in `.env`:
+Required variables in `.env` (depending on which providers you want to use):
 ```
-# AWS Credentials
+# Provider Selection
+# Options: "bedrock", "openai", or leave empty for openai
+PROVIDER_NAME=openai
+
+# OpenAI Configuration (required if using OpenAI provider)
+OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4o-mini
+
+# Bedrock Configuration (required if using Bedrock provider)
+AGENT_ID=your_bedrock_agent_id
+AGENT_ALIAS_ID=your_bedrock_agent_alias_id
 AWS_ACCESS_KEY_ID=your_aws_access_key_id
 AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
 AWS_REGION=us-east-1
 
-# Agent Configuration
-AGENT_ID=your_bedrock_agent_id
-AGENT_ALIAS_ID=your_bedrock_agent_alias_id
-
-# Optional: For streaming comparison tests
-OPENAI_API_KEY=your_openai_api_key
+# Logging Configuration (optional)
+LOG_LEVEL=INFO
 ```
 
 3. Start the server:
@@ -113,12 +129,23 @@ client = OpenAI(
     api_key="not-needed"  # The proxy doesn't check API keys
 )
 
+# Using the default provider configured in .env
 response = client.chat.completions.create(
-    model="bedrock-agent",  # Model name doesn't matter, will use Bedrock
+    model="gpt-4o-mini",  # Will use the provider's default model
     messages=[
         {"role": "user", "content": "Hello, how can you help me?"}
     ],
     stream=True  # Supports both streaming and non-streaming
+)
+
+# Or specify a provider explicitly in the request
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "user", "content": "Hello, how can you help me?"}
+    ],
+    stream=True,
+    provider="openai"  # Force using the OpenAI provider
 )
 
 for chunk in response:
@@ -139,13 +166,13 @@ Note: The ngrok free tier provides:
 #### Request Format
 ```json
 {
-    "model": "bedrock-agent",
+    "model": "gpt-4o-mini",
     "messages": [
         {"role": "system", "content": "You are a helpful assistant."},
         {"role": "user", "content": "Hello, how can you help me?"}
     ],
     "stream": false,
-    "session_id": "optional-session-id"
+    "provider": "openai"  // Optional: explicitly select a provider
 }
 ```
 
@@ -186,19 +213,40 @@ data: {"id":"chatcmpl-123","object":"chat.completion.chunk","created":1234567890
 data: [DONE]
 ```
 
-## Testing
+## Provider API
 
-### Run Streaming Format Test
-```bash
-python test_streaming.py
+### List Available Providers
+
+`GET /v1/providers`
+
+Returns information about available providers and their status:
+
+```json
+{
+    "providers": [
+        {
+            "name": "bedrock",
+            "available": true,
+            "default_model": "bedrock-agent"
+        },
+        {
+            "name": "openai",
+            "available": true,
+            "default_model": "gpt-4o-mini"
+        }
+    ],
+    "default": "openai"
+}
 ```
 
-This will:
-1. Start a local server instance
-2. Send identical requests to both OpenAI and the proxy
-3. Compare the streaming responses
-4. Validate format compatibility
-5. Generate a detailed comparison report
+## Adding New Providers
+
+To add a new provider:
+
+1. Create a new file in the `providers/` directory (e.g., `anthropic.py`)
+2. Implement the `CompletionProvider` interface
+3. Add the provider to the factory in `providers/__init__.py`
+4. Update the environment variables as needed
 
 ## Implementation Notes
 
