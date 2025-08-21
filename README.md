@@ -14,6 +14,15 @@ This component provides an OpenAI-compatible chat completions API that can use m
 - Exact matching of OpenAI's response format
 - Comprehensive error handling and logging
 
+The proxy will forward the text to your proxy's configured LLM. Specifically, you will point your Voice Agent config's `think` endpoint to your proxy's URL:
+```
+"think": {
+  "endpoint": {
+    "url": "https://your-proxy-endpoint.com/v1/chat/completions",
+    }
+  }
+```
+
 ## Server Components
 
 ### Main Application (`app.py`)
@@ -120,7 +129,16 @@ ngrok http 5000
 - Your OpenAI-compatible endpoint will be available at `https://xxxx-xx-xx-xxx-xx.ngrok-free.app/v1/chat/completions`
 - You can use this URL in any OpenAI-compatible client by setting the base URL
 
-Example using OpenAI Python client:
+In this example, you will update your Voice Agent `think` settings like:
+```
+"think": {
+  "endpoint": {
+    "url": "https://xxxx-xx-xx-xxx-xx.ngrok-free.app/v1/chat/completions",
+    }
+  }
+```
+
+# Example using OpenAI Python client:
 ```python
 from openai import OpenAI
 
