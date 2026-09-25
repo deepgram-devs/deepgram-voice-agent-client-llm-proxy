@@ -23,6 +23,71 @@ The proxy will forward the text to your proxy's configured LLM. Specifically, yo
   }
 ```
 
+## How it works
+
+The Voice Agent's `think` step normally calls an LLM provider directly. With this proxy, the agent calls your server instead. Your server speaks the OpenAI chat-completions protocol, forwards the turn to OpenAI or an Amazon Bedrock Agent, and re-wraps the answer as OpenAI-style streaming chunks. Listening (speech-to-text) and speaking (text-to-speech) stay inside Deepgram.
+
+Deepgram's servers make the `think` call, not the end user's browser, so the proxy needs a public URL (ngrok locally, or a load balancer in AWS).
+
+```mermaid
+flowchart LR
+    caller([Caller]) -- audio --> listen
+    subgraph agent [Deepgram Voice Agent]
+        listen[Listen<br/>speech-to-text] --> think[Think<br/>endpoint.url]
+        think --> speak[Speak<br/>text-to-speech]
+    end
+    speak -- audio --> caller
+    think -- "POST /v1/chat/completions" --> proxy
+    proxy -- "SSE chunks" --> think
+    subgraph yours [Your infrastructure, public URL]
+        proxy["LLM proxy<br/>Flask app.py :5005<br/>body.provider or PROVIDER_NAME"]
+    end
+    proxy -- "full messages[]" --> openai[OpenAI<br/>chat.completions.create]
+    proxy -- "last user message only" --> bedrock[Bedrock Agent<br/>invoke_agent]
+```
+
+### One conversational turn
+
+```mermaid
+sequenceDiagram
+    participant VA as Voice Agent
+    participant App as app.py
+    participant P as Provider class
+    participant LLM as OpenAI / Bedrock
+    VA->>App: POST {messages, model, stream: true}
+    App->>App: any role "user" message? (no → 400)
+    App->>App: get_provider(body.provider or PROVIDER_NAME)
+    App->>P: get_streaming_response()
+    P-->>VA: data: {delta: {role: "assistant"}}
+    Note right of P: sent before the LLM is called
+    P->>LLM: create(stream=True) / invoke_agent()
+    LLM-->>P: token deltas / chunk events
+    loop each piece
+        P-->>VA: data: {delta: {content: "..."}}
+    end
+    P-->>VA: data: {delta: {}, finish_reason: "stop"}
+    P-->>VA: data: [DONE]
+```
+
+Flask passes the provider's generator straight through (`stream_with_context`, `X-Accel-Buffering: no`), so each chunk goes out as soon as it's produced and TTS can start on the first content chunk. If the upstream returns nothing, the provider sends a canned "I apologize, but I received no response..." message, and the agent speaks it.
+
+### The two providers
+
+| | OpenAI | Bedrock Agent |
+|---|---|---|
+| Needs | `OPENAI_API_KEY`, optional `OPENAI_MODEL` | `AGENT_ID`, `AGENT_ALIAS_ID`, AWS keys, `AWS_REGION` |
+| Sends upstream | The whole `messages[]`, including the system prompt and history | Only the last user message, as `inputText` |
+| Memory across turns | Yes: the Voice Agent resends history on every turn | No: every request gets a new random `sessionId` |
+| Streaming | Real token deltas, re-wrapped one for one | `chunk` events only; a Bedrock Agent typically returns its answer in one piece |
+
+### Known limitations
+
+- **Function calling doesn't pass through.** The proxy doesn't forward `tools` from the request or `tool_calls` from the response. Only text content is relayed.
+- **No authentication.** Anyone with the public URL can use your provider credentials. Add a check on a header you configure in the Voice Agent `think.endpoint.headers` before you expose it.
+- **Bedrock has no conversation memory.** Only the last user message is sent, with a new session each time, so follow-up questions lose their context and the Voice Agent's system prompt never reaches the agent.
+- **Transcripts are logged at INFO.** Request bodies and replies are logged in full (`app.py`, `providers/base.py`), so a caller's words end up in the logs.
+- **Errors mid-stream arrive as data.** Once streaming starts the HTTP status is already 200, so an upstream failure is sent as a `data: {"error": ...}` event without `[DONE]`.
+
 ## Server Components
 
 ### Main Application (`app.py`)
@@ -41,18 +106,10 @@ The proxy will forward the text to your proxy's configured LLM. Specifically, yo
 ### Streaming Support
 The server implements Server-Sent Events (SSE) streaming that:
 - Matches OpenAI's chunk format exactly
-- Provides word-by-word streaming
+- Relays OpenAI token deltas as they arrive; Bedrock Agent output is forwarded per completion chunk
 - Handles role and content deltas
-- Processes trace events and completion chunks
+- Forwards Bedrock completion chunks (the non-streaming path also reads trace final responses)
 - Maintains consistent message IDs
-
-### Streaming Test Tool (`test_streaming.py`)
-A validation tool that:
-- Compares responses with OpenAI's API
-- Verifies streaming format compatibility
-- Checks chunk formatting and timing
-- Validates role and content handling
-- Measures streaming performance
 
 ## Setup
 
@@ -121,7 +178,7 @@ python app.py
 
 5. In a new terminal, start ngrok:
 ```bash
-ngrok http 5000
+ngrok http 5005
 ```
 
 6. Use the provided URL:
@@ -268,8 +325,8 @@ To add a new provider:
 
 ## Implementation Notes
 
-- Token usage information is not available from Bedrock and will return -1
-- Session IDs are generated using UUID4 if not provided
-- Error responses follow OpenAI's format for compatibility
-- The server sanitizes error messages to prevent information leakage
-- AWS credentials are loaded securely from environment variables 
+- Token usage is not reported: non-streaming responses return -1 for every provider
+- A new Bedrock session ID (UUID4) is generated for every request, so a Bedrock Agent keeps no memory between turns
+- Streaming errors use OpenAI's error object shape; non-streaming errors return `{"error": "<message>"}`
+- Error messages are returned to the caller unmodified, so upstream error details are visible to whoever calls the proxy
+- AWS credentials are read from plain environment variables (`.env` via python-dotenv); use a secrets manager or an IAM role in production 
