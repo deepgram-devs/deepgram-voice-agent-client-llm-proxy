@@ -29,22 +29,11 @@ The Voice Agent's `think` step normally calls an LLM provider directly. With thi
 
 Deepgram's servers make the `think` call, not the end user's browser, so the proxy needs a public URL (ngrok locally, or a load balancer in AWS).
 
-```mermaid
-flowchart LR
-    caller([Caller]) -- audio --> listen
-    subgraph agent [Deepgram Voice Agent]
-        listen[Listen<br/>speech-to-text] --> think[Think<br/>endpoint.url]
-        think --> speak[Speak<br/>text-to-speech]
-    end
-    speak -- audio --> caller
-    think -- "POST /v1/chat/completions" --> proxy
-    proxy -- "SSE chunks" --> think
-    subgraph yours [Your infrastructure, public URL]
-        proxy["LLM proxy<br/>Flask app.py :5005<br/>body.provider or PROVIDER_NAME"]
-    end
-    proxy -- "full messages[]" --> openai[OpenAI<br/>chat.completions.create]
-    proxy -- "last user message only" --> bedrock[Bedrock Agent<br/>invoke_agent]
-```
+![Deepgram Voice Agent API overview: customer audio flows through speech-to-text, an LLM box labelled "Managed, BYO, or Custom LLM", and text-to-speech inside one API](docs/assets/voice-agent-api.png)
+
+This proxy is the **Custom LLM** in the red LLM box. The Voice Agent sends each turn to `POST /v1/chat/completions` on the proxy (Flask `app.py`, port 5005), which picks a provider from `body.provider` or `PROVIDER_NAME`. OpenAI gets the full `messages[]` through `chat.completions.create`. A Bedrock Agent gets only the last user message through `invoke_agent`. The proxy streams the reply back as OpenAI-style SSE chunks.
+
+The slide shows the whole Voice Agent API. Speech-to-text, text-to-speech, end-of-thought detection and interruption handling run inside Deepgram, so they work unchanged with this proxy. Function calling does not pass through the proxy, and neither do the External Systems the slide reaches with it (embeddings, databases, retrieval). See [Known limitations](#known-limitations).
 
 ### One conversational turn
 
