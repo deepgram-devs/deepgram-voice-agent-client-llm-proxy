@@ -1,0 +1,32 @@
+<!doctype html><meta charset=utf-8>
+<!--
+  Source for docs/assets/voice-agent-api.png: the "Single, Unified Voice Agent API"
+  slide (voice-agent-api-slide.png, exported 1600x900 from the Voice Agent deck)
+  with this repo's LLM proxy and its providers drawn on top.
+  To regenerate: open this file in a 1600x900 viewport and screenshot it.
+-->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;width:1600px;height:900px;overflow:hidden;font-family:Inter,sans-serif}
+#s{position:absolute;inset:0;background:url(voice-agent-api-slide.png) no-repeat 0 0/1600px 900px}
+.box{position:absolute;box-sizing:border-box;border-radius:14px;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+#proxy{left:1262px;top:676px;width:248px;height:84px;border:3px solid #fbbf24;background:#2a2e35;box-shadow:0 0 18px rgba(251,191,36,.35)}
+#proxy b{font-size:22px;line-height:1.15;font-weight:600}
+#proxy i{font-style:normal;font-size:12px;font-weight:700;letter-spacing:.1em;color:#fbbf24;margin-bottom:2px}
+#proxy span{font-size:15px;color:#e4e4e7;margin-top:3px;font-family:ui-monospace,Menlo,monospace}
+#tag{position:absolute;left:1268px;top:640px;width:236px;text-align:center;font-size:11.5px;font-weight:700;letter-spacing:.08em;color:#fbbf24}
+.prov{top:778px;height:34px;border:2px solid #a1a1aa;border-radius:18px;font-size:15px;font-weight:500;letter-spacing:.02em}
+#oa{left:1262px;width:104px}#br{left:1376px;width:134px}
+svg{position:absolute;inset:0}
+</style>
+<div id=s></div>
+<svg width=1600 height=900><defs>
+<marker id=a viewBox="0 0 10 10" refX=9 refY=5 markerWidth=7 markerHeight=7 orient=auto-start-reverse><path d="M0,0L10,5L0,10z" fill="#e5e7eb"/></marker></defs>
+<g fill=none stroke="#e5e7eb" stroke-width=1.6 stroke-dasharray="5 4">
+<path d="M1160 565 V698 H1258" marker-start="url(#a)" marker-end="url(#a)"/>
+<path d="M1314 762 V774" marker-end="url(#a)"/>
+<path d="M1443 762 V774" marker-end="url(#a)"/>
+</g></svg>
+<div id=proxy class=box><i>CUSTOM LLM · THIS REPO</i><b>LLM Proxy</b><span>/v1/chat/completions</span></div>
+<div id=oa class="box prov">OpenAI</div>
+<div id=br class="box prov">Bedrock Agent</div>
