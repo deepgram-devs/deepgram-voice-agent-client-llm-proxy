@@ -29,11 +29,15 @@ The Voice Agent's `think` step normally calls an LLM provider directly. With thi
 
 Deepgram's servers make the `think` call, not the end user's browser, so the proxy needs a public URL (ngrok locally, or a load balancer in AWS).
 
-![Deepgram Voice Agent API with this proxy: the Voice Agent's LLM step calls the LLM Proxy, which calls OpenAI or a Bedrock Agent](docs/assets/voice-agent-api.png)
+![Deepgram Voice Agent API with this proxy: STT sends transcript text to the LLM proxy, the proxy calls OpenAI, a Bedrock Agent or your own logic, and the reply text goes back to TTS](docs/assets/voice-agent-api.png)
 
-This proxy is the yellow **LLM Proxy** box: the Voice Agent's "Custom LLM" option. The Voice Agent sends each turn to `POST /v1/chat/completions` on the proxy (Flask `app.py`, port 5005), which picks a provider from `body.provider` or `PROVIDER_NAME`. OpenAI gets the full `messages[]` through `chat.completions.create`. A Bedrock Agent gets only the last user message through `invoke_agent`. The proxy streams the reply back as OpenAI-style SSE chunks.
+Audio never reaches the proxy. Deepgram turns the caller's speech into text, decides when they've finished a thought, and sends that transcript to the proxy (the yellow path). The proxy can forward the text to an LLM or act on it itself; whatever text it returns is what the agent speaks.
 
-The slide shows the whole Voice Agent API. Speech-to-text, text-to-speech, end-of-thought detection and interruption handling run inside Deepgram, so they work unchanged with this proxy. Function calling does not pass through the proxy, and neither do the External Systems the slide reaches with it (embeddings, databases, retrieval). See [Known limitations](#known-limitations).
+The Voice Agent posts each turn to `POST /v1/chat/completions` on the proxy (Flask `app.py`, port 5005), which picks a provider from `body.provider` or `PROVIDER_NAME`. OpenAI gets the full `messages[]` through `chat.completions.create`. A Bedrock Agent gets only the last user message through `invoke_agent`. Your own logic goes in a new provider class (see [Adding New Providers](#adding-new-providers)). The proxy streams the reply back as OpenAI-style SSE chunks.
+
+Speech-to-text, end-of-thought detection, interruption handling and text-to-speech stay inside Deepgram and work unchanged. Function calling is not relayed through the proxy; see [Known limitations](#known-limitations).
+
+The diagram source is `docs/assets/src/voice-agent-api.html`. To regenerate the PNG, screenshot it in a 1600×900 viewport.
 
 ### One conversational turn
 

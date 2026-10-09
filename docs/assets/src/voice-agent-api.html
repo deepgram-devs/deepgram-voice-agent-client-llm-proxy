@@ -1,0 +1,130 @@
+<!doctype html><meta charset=utf-8>
+<!--
+  Source for docs/assets/voice-agent-api.png, drawn in the style of the
+  "Single, Unified Voice Agent API" slide. To regenerate: open this file
+  in a 1600x900 viewport (deviceScaleFactor 1) and screenshot it.
+-->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;background:#1b1c1f}
+svg{display:block;width:100%;height:auto;font-family:Inter,sans-serif}
+.mono{font-family:'JetBrains Mono',monospace}
+</style>
+<svg viewBox="0 0 1600 900" role=img aria-label="Deepgram Voice Agent API with this LLM proxy: STT sends transcript text to the proxy, the proxy forwards it to OpenAI, a Bedrock Agent or your own logic, and the reply text goes back to TTS">
+<defs>
+  <radialGradient id=gb gradientUnits=userSpaceOnUse cx=0 cy=0 r=560><stop offset=0 stop-color="#1677d2"/><stop offset=1 stop-color="#1677d2" stop-opacity=0 /></radialGradient>
+  <radialGradient id=gg gradientUnits=userSpaceOnUse cx=1600 cy=900 r=440><stop offset=0 stop-color="#1fa36f"/><stop offset=1 stop-color="#1fa36f" stop-opacity=0 /></radialGradient>
+  <marker id=aw viewBox="0 0 10 10" refX=9 refY=5 markerWidth=7 markerHeight=7 orient=auto-start-reverse><path d="M0,0L10,5L0,10z" fill="#e4e4e7"/></marker>
+  <marker id=ay viewBox="0 0 10 10" refX=9 refY=5 markerWidth=6 markerHeight=6 orient=auto-start-reverse><path d="M0,0L10,5L0,10z" fill="#fbbf24"/></marker>
+  <filter id=glow x=-30% y=-30% width=160% height=160%><feGaussianBlur stdDeviation=10 /></filter>
+  <g id=wave stroke="#d4d4d8" stroke-width=3 stroke-linecap=round>
+    <line x1=-27 y1=-8 x2=-27 y2=8 /><line x1=-18 y1=-18 x2=-18 y2=18 /><line x1=-9 y1=-30 x2=-9 y2=30 />
+    <line x1=0 y1=-14 x2=0 y2=14 /><line x1=9 y1=-36 x2=9 y2=36 /><line x1=18 y1=-20 x2=18 y2=20 /><line x1=27 y1=-9 x2=27 y2=9 />
+  </g>
+</defs>
+
+<rect width=1600 height=900 fill="#1b1c1f"/>
+<rect width=1600 height=900 fill="url(#gb)"/>
+<rect width=1600 height=900 fill="url(#gg)"/>
+
+<text x=72 y=103 fill="#fff" font-size=52 font-weight=700>Where the LLM proxy sits</text>
+<text x=72 y=152 fill="#e4e4e7" font-size=27 font-weight=400>The Voice Agent sends each finished thought to your proxy as text, and speaks the text it gets back</text>
+
+<rect x=57 y=200 width=1486 height=635 rx=100 fill="#2b2f36"/>
+
+<!-- ===== Deepgram Voice Agent ===== -->
+<text x=730 y=272 text-anchor=middle fill="#a35cf5" font-size=26 font-weight=700>Deepgram Voice Agent API</text>
+<rect x=540 y=296 width=380 height=430 rx=48 fill=none stroke="#a35cf5" stroke-width=5 />
+
+<rect x=580 y=336 width=300 height=110 rx=18 fill="#2b2f36" stroke="#2ee59d" stroke-width=3 />
+<text x=730 y=383 text-anchor=middle fill="#fff" font-size=23>STT: Deepgram</text>
+<text x=730 y=413 text-anchor=middle fill="#fff" font-size=23>Flux or Nova-3</text>
+
+<g font-size=13 font-weight=500 fill="#fff" letter-spacing=.5>
+  <rect x=600 y=468 width=260 height=36 rx=8 fill=none stroke="#6ea8fe" stroke-width=3 />
+  <text x=730 y=491 text-anchor=middle>END OF THOUGHT</text>
+  <rect x=600 y=516 width=260 height=36 rx=8 fill=none stroke="#6ea8fe" stroke-width=3 />
+  <text x=730 y=539 text-anchor=middle>INTERRUPTION HANDLING</text>
+</g>
+
+<rect x=580 y=576 width=300 height=110 rx=18 fill="#2b2f36" stroke="#f4a08f" stroke-width=3 />
+<text x=730 y=623 text-anchor=middle fill="#fff" font-size=23>TTS: Deepgram</text>
+<text x=730 y=653 text-anchor=middle fill="#fff" font-size=23>Aura-2</text>
+
+<!-- ===== Caller side ===== -->
+<rect x=84 y=462 width=186 height=96 rx=16 fill=none stroke="#d4d4d8" stroke-width=3 />
+<g fill="#e4e4e7"><circle cx=120 cy=496 r=12 /><path d="M98 536a22 18 0 0 1 44 0z"/></g>
+<text x=152 y=518 fill="#fff" font-size=22>Customer</text>
+
+<rect x=298 y=440 width=212 height=140 rx=20 fill=none stroke="#fff" stroke-width=3 />
+<text x=404 y=503 text-anchor=middle fill="#fff" font-size=20>Audio input,</text>
+<text x=404 y=530 text-anchor=middle fill="#fff" font-size=20>including telephony</text>
+
+<g fill=none stroke="#e4e4e7" stroke-width=1.8 stroke-dasharray="6 5">
+  <path d="M176 460 V392 H404 V436" marker-end="url(#aw)"/>
+  <path d="M404 582 V654 H176 V562" marker-end="url(#aw)"/>
+  <path d="M478 438 V391 H576" marker-end="url(#aw)"/>
+  <path d="M578 631 H478 V584" marker-end="url(#aw)"/>
+</g>
+<g><rect x=250 y=354 width=80 height=76 fill="#2b2f36"/><use href="#wave" x=290 y=392 /></g>
+<g><rect x=250 y=616 width=80 height=76 fill="#2b2f36"/><use href="#wave" x=290 y=654 /></g>
+<text x=509 y=381 text-anchor=middle fill="#a1a1aa" font-size=13 font-weight=500>audio</text>
+<text x=509 y=652 text-anchor=middle fill="#a1a1aa" font-size=13 font-weight=500>audio</text>
+
+<!-- ===== Your server: the proxy ===== -->
+<rect x=962 y=296 width=276 height=430 rx=30 fill=none stroke="#9ca3af" stroke-width=2.5 stroke-dasharray="10 8"/>
+<text x=1100 y=326 text-anchor=middle fill="#a1a1aa" font-size=12.5 font-weight=600 letter-spacing=1.2>YOUR SERVER · PUBLIC URL</text>
+
+<g id=proxy><title>LLM proxy (this repo)</title>
+<rect x=980 y=432 width=240 height=158 rx=18 fill=none stroke="#fbbf24" stroke-width=8 opacity=.45 filter="url(#glow)"/>
+<rect x=980 y=432 width=240 height=158 rx=18 fill="#2b2f36" stroke="#fbbf24" stroke-width=4 />
+<text x=1100 y=466 text-anchor=middle fill="#fbbf24" font-size=12.5 font-weight=700 letter-spacing=1.2>CUSTOM LLM · THIS REPO</text>
+<text x=1100 y=505 text-anchor=middle fill="#fff" font-size=28 font-weight=700>LLM Proxy</text>
+<text x=1100 y=538 text-anchor=middle fill="#e4e4e7" font-size=14 class=mono>Flask app.py :5005</text>
+<text x=1100 y=562 text-anchor=middle fill="#e4e4e7" font-size=14 class=mono>/v1/chat/completions</text>
+</g>
+
+<!-- the text path: STT -> proxy -> TTS -->
+<g id=text-path><title>Text path: transcript to the proxy, reply text back to TTS</title>
+<g fill=none stroke="#fbbf24" stroke-width=3>
+  <path d="M882 372 H1100 V426" marker-end="url(#ay)"/>
+  <path d="M1100 592 V650 H886" marker-end="url(#ay)"/>
+</g>
+<g font-weight=600 font-size=16 fill="#fbbf24">
+  <text x=976 y=360>transcript text</text>
+  <text x=976 y=676>reply text, streamed</text>
+</g>
+</g>
+
+<!-- ===== What the proxy does with the text ===== -->
+<g id=providers><title>What the proxy calls</title>
+<text x=1400 y=326 text-anchor=middle fill="#a1a1aa" font-size=12.5 font-weight=600 letter-spacing=1.2>THEN THE PROXY CALLS</text>
+<g fill=none stroke="#d4d4d8" stroke-width=3>
+  <rect x=1290 y=350 width=220 height=78 rx=16 />
+  <rect x=1290 y=472 width=220 height=78 rx=16 />
+  <rect x=1290 y=594 width=220 height=78 rx=16 stroke-dasharray="9 7"/>
+</g>
+<g text-anchor=middle>
+  <text x=1400 y=384 fill="#fff" font-size=21 font-weight=500>OpenAI</text>
+  <text x=1400 y=410 fill="#a1a1aa" font-size=13.5>full messages[ ]</text>
+  <text x=1400 y=506 fill="#fff" font-size=21 font-weight=500>Bedrock Agent</text>
+  <text x=1400 y=532 fill="#a1a1aa" font-size=13.5>last user message</text>
+  <text x=1400 y=628 fill="#fff" font-size=21 font-weight=500>Your own logic</text>
+  <text x=1400 y=654 fill="#a1a1aa" font-size=13.5>a new provider class</text>
+</g>
+<g fill=none stroke="#e4e4e7" stroke-width=1.8 stroke-dasharray="6 5">
+  <path d="M1222 511 H1266 V389 H1286" marker-end="url(#aw)"/>
+  <path d="M1222 511 H1286" marker-end="url(#aw)"/>
+  <path d="M1266 511 V633 H1286" marker-end="url(#aw)"/>
+</g>
+
+</g>
+<!-- ===== Footer ===== -->
+<g font-size=15 fill="#a1a1aa">
+  <line x1=150 y1=780 x2=186 y2=780 stroke="#e4e4e7" stroke-width=1.8 stroke-dasharray="6 5"/>
+  <text x=196 y=785>audio</text>
+  <line x1=262 y1=780 x2=298 y2=780 stroke="#fbbf24" stroke-width=3 />
+  <text x=308 y=785>text through your proxy</text>
+  <text x=1450 y=785 text-anchor=end>STT, turn-taking and TTS stay in Deepgram. Function calling is not relayed by the proxy.</text>
+</g>
+</svg>
